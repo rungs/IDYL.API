@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Helper\DataSourceLoadOptionsBinder.cs" />
+    <Compile Remove="Helper\Helper.cs" />
+    <Compile Remove="Helper\SendMail.cs" />
+    <Compile Remove="Helper\TokenHelper.cs" />
+    <Compile Remove="Repositories\Repository.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.0.90" />
+    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.12.2" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.12.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MailBee.NET.45">
+      <HintPath>..\IDYL.API\libs\MailBee.NET.45.dll</HintPath>
+    </Reference>
+    <Reference Include="PAUtility">
+      <HintPath>..\IDYL.API\libs\PAUtility.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

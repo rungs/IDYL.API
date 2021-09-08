@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
+    <PackageReference Include="MimeKit" Version="2.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
+    <ProjectReference Include="..\ServiceLayer\ServiceLayer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MailBee.NET.45">
+      <HintPath>..\IDYL.API\libs\MailBee.NET.45.dll</HintPath>
+    </Reference>
+    <Reference Include="PAUtility">
+      <HintPath>..\IDYL.API\libs\PAUtility.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPPlus.Core" Version="1.5.4" />
+    <PackageReference Include="MailKit" Version="2.15.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DomainLayer\DomainLayer.csproj" />
+    <ProjectReference Include="..\RepositoryLayer\RepositoryLayer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MailBee.NET.45">
+      <HintPath>..\IDYL.API\libs\MailBee.NET.45.dll</HintPath>
+    </Reference>
+    <Reference Include="PAUtility">
+      <HintPath>..\IDYL.API\libs\PAUtility.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
