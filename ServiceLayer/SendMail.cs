@@ -30,7 +30,7 @@ namespace IdylAPI.Helper
 
                 MimeMessage message = new MimeMessage();
 
-                MailboxAddress from = new MailboxAddress(senderMail);
+                MailboxAddress from = new MailboxAddress(senderMail, senderMail);
                 message.From.Add(from);
 
                 MailboxAddress to = new MailboxAddress(user.Firstname + " " + user.Lastname, user.Email);

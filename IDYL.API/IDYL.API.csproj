@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Remove="Helper\Helper.cs" />
+    <Compile Remove="Helper\LogFile.cs" />
   </ItemGroup>
 
   <ItemGroup>

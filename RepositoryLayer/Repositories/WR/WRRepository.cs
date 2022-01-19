@@ -14,6 +14,8 @@ using System.Linq;
 using static System.Data.CommandType;
 using Microsoft.AspNetCore.Hosting;
 using IdylAPI.Helper;
+using DomainLayer.Entities;
+using IdylAPI.Models.Master;
 
 namespace IdylAPI.Services.Repository.WR
 {
@@ -21,7 +23,7 @@ namespace IdylAPI.Services.Repository.WR
     {
         private readonly IConfiguration _configuration;
         private readonly string _connStr;
-      
+
         [Obsolete]
         private readonly IHostingEnvironment _host;
 
@@ -32,7 +34,7 @@ namespace IdylAPI.Services.Repository.WR
             _configuration = configuration;
             _connStr = _configuration.GetConnectionString("IDYLConnection");
         }
-     
+
         public Result CreateWR(Models.WO.WO wo)
         {
             Result result = new Result();
@@ -55,6 +57,50 @@ namespace IdylAPI.Services.Repository.WR
                         conn.Execute("sp_WR_CreateWRFromReportProblem", parameters, commandType: StoredProcedure, transaction: trans);
                         trans.Commit();
                         //result.Data = wo;
+                        result.ErrMsg = "บันทึกเรียบร้อย";
+                        result.StatusCode = 200;
+                    }
+                    catch (Exception ex)
+                    {
+                        trans.Rollback();
+                        result.StatusCode = 500;
+                        result.ErrMsg = ex.Message;
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        public Result CreateWR(DomainLayer.Entities.WR wr)
+        {
+
+            Result result = new Result();
+            using (SqlConnection conn = new SqlConnection(_connStr))
+            {
+                conn.Open();
+                using (SqlTransaction trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        DynamicParameters parameters = new DynamicParameters();
+                        WRResponse wRResponse = new WRResponse();
+                        parameters.Add("@WONo", 0, DbType.Int32, ParameterDirection.Output);
+                        parameters.Add("@WRDate", ValDB.GetDateTime(wr.wr_date));
+                        parameters.Add("@WorkDesc", wr.work_desc ?? Convert.DBNull);
+                        parameters.Add("@WRCode", wr.ref_code ?? Convert.DBNull);
+                        parameters.Add("@ProblemTypeCode", wr.problem_type_code ?? Convert.DBNull);
+                        parameters.Add("@EQCode", ValDB.GetString(wr.eq_code));
+                        parameters.Add("@LocationCode", ValDB.GetString(wr.location_code));
+                        parameters.Add("@CompanyNo", wr.clientId);
+                        parameters.Add("@WOCode", "", DbType.String, direction: ParameterDirection.Output, size: int.MaxValue);
+
+                        conn.Query<int>("WO_InsertAPI", parameters, commandType: StoredProcedure, transaction: trans);
+
+                        wRResponse.wr_no = parameters.Get<int>("@WONo");
+                        wRResponse.wr_code = conn.QueryFirst<string>("select wocode from wo where wono = " + wRResponse.wr_no, commandType: Text, transaction: trans);
+
+                        result.Data = wRResponse;
                         result.ErrMsg = "บันทึกเรียบร้อย";
                         result.StatusCode = 200;
                     }
@@ -188,13 +234,51 @@ namespace IdylAPI.Services.Repository.WR
                                 SqlMapper.Execute(conn, "sp_AttachFile_Insert", parameters, commandType: StoredProcedure, transaction: trans);
 
                             }
-                        }                      
+                        }
 
                         trans.Commit();
                         if (isNew)
                         {
                             new Notify.NotifyRepository(_configuration).Send(wo.WONo, "REQUEST", wo.CompanyNo, user.CustomerNo);
+
+                            string cmd = $" select * from section where sectionno={wo.SectionNo}";
+                            Section section = conn.QueryFirst<Section>(cmd, parameters, commandType: Text);
+
+                            if (section.IsSendLine.HasValue && section.IsSendLine.Value)
+                            {
+                                string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{7}| อาการ/ปัญหา: {0}| วันที่แจ้ง: {1}" +
+                                    "| วันที่เกิดปัญหา: {3} | หน่วยงานแจ้ง: {4} | ผู้แจ้ง: {5}| {6}"
+                                    , wo.WorkDesc
+                                    , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
+                                    , woOld.WOCode
+                                    , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
+                                    , section.SectionName
+                                , woOld.ReqName
+                                , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"
+                                , $"{woOld.EQCode};{woOld.EQName}");
+
+                                new SendNotify(_configuration).LineNotify(msg, section.LineToken);
+                            }
+                            if (section.IsSendEmail.HasValue && section.IsSendEmail.Value)
+                            {
+                                Mail.SendEmail(_configuration, new MailReq()
+                                {
+                                    Content = string.Format("{3}<br/><b>อาการ/ปัญหา: </b>{0}<br/><br/><b>วันที่แจ้ง: </b>{1}<br/>" +
+                                        "<b>วันที่เกิดปัญหา: </b>{2}<br/><b>หน่วยงานแจ้ง: </b>{4}<br/><b>ผู้แจ้ง: </b>{5}<br/>"
+                                        , wo.WorkDesc
+                                        , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
+                                        , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
+                                        , woOld.WOCode
+                                        , section.SectionName
+                                        , woOld.ReqName),
+                                    DocCode = woOld.WOCode,
+                                    DocLink = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}",
+                                    FromPage = "WR",
+                                    Receive = section.Email
+                                });
+                            }
                         }
+
                         result.Data = wo;
                         result.ErrMsg = "บันทึกเรียบร้อย";
                         result.StatusCode = 200;
@@ -210,6 +294,7 @@ namespace IdylAPI.Services.Repository.WR
                 return result;
             }
         }
+
         public Result Retrive(WhereParameter whereParameter, Models.Authorize.User user)
         {
             Result result = new Result();
@@ -266,6 +351,7 @@ namespace IdylAPI.Services.Repository.WR
             }
             return result;
         }
+
         public Result RetriveById(int id)
         {
             Result result = new Result();
@@ -308,6 +394,7 @@ namespace IdylAPI.Services.Repository.WR
             }
             return result;
         }
+
         public Result RetriveForReportProblem(int siteNo, int systemNo)
         {
             Result result = new Result();
@@ -317,10 +404,10 @@ namespace IdylAPI.Services.Repository.WR
                 {
                     conn.Open();
                     DynamicParameters parameters = new DynamicParameters();
-                    
+
                     parameters.Add("@SystemNo", systemNo);
                     parameters.Add("@SiteNo", siteNo);
-                   
+
                     IEnumerable<IdylAPI.Models.WO.WO> wOs = conn.Query<IdylAPI.Models.WO.WO>("sp_ReportProblem_Retrive", parameters, commandType: StoredProcedure);
                     result.Data = wOs;
                     result.StatusCode = 200;

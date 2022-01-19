@@ -1,6 +1,9 @@
 ﻿using IdylAPI.Models.Notify;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,6 +49,34 @@ namespace IdylAPI.Helper
               
             }
             return result;
+        }
+
+        public void LineNotify(string msg, string token)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://notify-api.line.me/api/notify");
+                string postData = string.Format("message={0}", msg);
+                byte[] data = Encoding.UTF8.GetBytes(postData);
+
+                request.Method = "POST";
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = data.Length;
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                using (Stream stream = request.GetRequestStream())
+                {
+                    stream.Write(data, 0, data.Length);
+                }
+
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                string responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine(ex.ToString());
+            }
+
         }
     }
 }

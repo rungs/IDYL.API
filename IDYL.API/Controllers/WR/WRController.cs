@@ -67,5 +67,12 @@ namespace IdylAPI.Controllers.WR
             //Redirect("http://localhost/IDYL/print.aspx?wono=375152");
             //return Ok();
         }
+
+        [HttpPost("CreateWR")]
+        public OkObjectResult CreateWR([FromBody] DomainLayer.Entities.WR wr)
+        {
+            Result result = _wrRepository.CreateWR(wr);
+            return Ok(result);
+        }
     }
 }

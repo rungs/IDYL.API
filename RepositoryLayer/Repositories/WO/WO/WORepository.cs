@@ -3,6 +3,7 @@ using IdylAPI.Helper;
 using IdylAPI.Models;
 using IdylAPI.Models.Authorize;
 using IdylAPI.Models.Img;
+using IdylAPI.Models.Master;
 using IdylAPI.Models.WO;
 using IdylAPI.Services.Interfaces.WO;
 using Microsoft.AspNetCore.Hosting;
@@ -71,7 +72,7 @@ namespace IdylAPI.Services.Repository.WO
 
                     if (!string.IsNullOrEmpty(InputVal.ToString(whereParameter.WOTypeCode)))
                     {
-                        if(whereParameter.WOTypeCode != "null" && whereParameter.WOTypeCode != "0")
+                        if (whereParameter.WOTypeCode != "null" && whereParameter.WOTypeCode != "0")
                         {
                             condition += $" and wotype.wotypecode = '{whereParameter.WOTypeCode}'";
                         }
@@ -80,15 +81,15 @@ namespace IdylAPI.Services.Repository.WO
                             condition += $" and isnull(wo.wotypeno,0) = 0 ";
                         }
 
-                       
+
 
                         if (whereParameter.IsOverdue)
                         {
                             condition += $" and CAST(wo.PlnDate AS DATE) < CAST(GETDATE() AS DATE)";
                         }
                         condition += $" and DocumentHistory.AssignTo = '{user.CustomerNo}'";
-                        
-                   }
+
+                    }
 
                     if ("D" == whereParameter.DataType)
                     {
@@ -100,7 +101,7 @@ namespace IdylAPI.Services.Repository.WO
                     }
                     condition += " and _SystUser_Location.userno = " + user.UserNo;
 
-                    if(user.UserGroupId.HasValue  && user.UserGroupId.Value == 4)
+                    if (user.UserGroupId.HasValue && user.UserGroupId.Value == 4)
                     {
                         condition += " and wo.wostatusno <> 5 ";
                     }
@@ -405,12 +406,12 @@ namespace IdylAPI.Services.Repository.WO
                     IEnumerable<Models.WO.WO> wOs = conn.Query<Models.WO.WO>("msp_WOMain_Retrive_ViewFilter", parameters, commandType: StoredProcedure);
 
                     List<GroupFilter> groupFilters = new List<GroupFilter>();
-                   
+
                     FilterHelper.AddFilter(ref groupFilters, InitFilterMaster.CreateEQ(wOs), "eq", "อุปกรณ์");
                     FilterHelper.AddFilter(ref groupFilters, InitFilterMaster.CreateLocation(wOs), "location", "สถานที่");
                     FilterHelper.AddFilter(ref groupFilters, InitFilterMaster.CreatePlnDate(), "plndate", "วางแผน");
                     FilterHelper.AddFilter(ref groupFilters, InitFilterMaster.CreateWoType(wOs), "wotype", "ประเภทงาน");
-                  
+
                     result.Data = groupFilters;
                     result.StatusCode = 200;
                 }
@@ -441,7 +442,7 @@ namespace IdylAPI.Services.Repository.WO
                         AttachFileObject[] attachment = { new AttachFileObject() { } };
                         wOs.Attachment = attachment;
                         wOs.AttachmentObj = new List<string>();
-                        wOs.AttachmentAfterObj = new List<string>(); 
+                        wOs.AttachmentAfterObj = new List<string>();
                         wOs.AttachmentBefore = attachment;
                         wOs.AttachmentAfter = attachment;
                         wOs.DTs = new Models.WO.DT();
@@ -534,6 +535,7 @@ namespace IdylAPI.Services.Repository.WO
             return result;
         }
 
+        [Obsolete]
         public Result UpdatePlan(Models.WO.WO wo, User user)
         {
             Result result = new Result();
@@ -545,11 +547,14 @@ namespace IdylAPI.Services.Repository.WO
                     try
                     {
                         DynamicParameters parameters = new DynamicParameters();
-
-
-
                         parameters.Add("@WONo", wo.WONo);
                         Models.WO.WO woOld = conn.QueryFirst<Models.WO.WO>("sp_WO_GetByNo", parameters, commandType: StoredProcedure, transaction: trans);
+
+                        bool isPlan = false;
+                        if (woOld.PlnDate != wo.PlnDate || woOld.CraftNo != wo.CraftNo)
+                        {
+                            isPlan = true;
+                        }
 
                         parameters = new DynamicParameters();
                         parameters.Add("@WONo", woOld.WONo);
@@ -586,11 +591,37 @@ namespace IdylAPI.Services.Repository.WO
 
                         conn.Execute("sp_WO_Update", parameters, commandType: StoredProcedure, transaction: trans);
 
-
-
                         trans.Commit();
                         result.ErrMsg = "บันทึกเรียบร้อย";
                         result.StatusCode = 200;
+                        if (isPlan)
+                        {
+                            string cmd = $" select * from customer where customerno={wo.CraftNo}";
+                            Customer craft = conn.QueryFirst<Customer>(cmd, parameters, commandType: Text);
+
+                            if (craft.IsSendLine.HasValue && craft.IsSendLine.Value)
+                            {
+                                string msg = string.Format("IDYL: {2}| อาการ/ปัญหา: {0}| ประมาณวันเริ่มเวลา: {1}| {3}"
+                                    , wo.WorkDesc
+                                    , wo.PlnDate!= null ? Convert.ToDateTime(wo.PlnDate).ToString("dd/MM/yyyy HH:mm") : ""
+                                    , woOld.WOCode
+                                    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}");
+
+                                new SendNotify(_configuration).LineNotify(msg, craft.LineToken);
+                            }
+                            if (craft.IsSendEmail.HasValue && craft.IsSendEmail.Value)
+                            {
+                                string dateTime = wo.PlnDate != null ? Convert.ToDateTime(wo.PlnDate).ToString("dd/MM/yyyy HH:mm") : "";
+                                Mail.SendEmail(_configuration, new MailReq()
+                                {
+                                    Content = $"<br/><b>อาการ/ปัญหา: </b>{woOld.WorkDesc}<br/><br/><b>ประมาณวันเริ่มเวลา: </b>{dateTime}<br/>",
+                                    DocCode = woOld.WOCode,
+                                    DocLink = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={woOld.WONo}",
+                                    FromPage = "WO",
+                                    Receive = craft.Email
+                                });
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -637,7 +668,7 @@ namespace IdylAPI.Services.Repository.WO
                         parameters.Add("@PlnDuration", woOld.PlnDuration);
                         parameters.Add("@PlnManHours", woOld.PlnManHours);
                         parameters.Add("@WOAction", wo.WOAction);
-                        parameters.Add("@ActDateStart",PAUtility.ValDBDapper.GetDateTime(wo.ActDateStart));
+                        parameters.Add("@ActDateStart", PAUtility.ValDBDapper.GetDateTime(wo.ActDateStart));
                         parameters.Add("@ActDate", wo.ActDate);
                         parameters.Add("@ActTime", woOld.ActTime);
                         parameters.Add("@ActDuration", wo.ActDuration);
@@ -660,10 +691,10 @@ namespace IdylAPI.Services.Repository.WO
                             parameters = new DynamicParameters();
                             parameters.Add("@WONo", wo.WONo);
                             Models.WO.DT dTOld = conn.QueryFirstOrDefault<Models.WO.DT>("sp_DownTime_GetByWONo", parameters, commandType: StoredProcedure, transaction: trans);
-                         
+
                             if (wo.DTs.DateTimeStop.HasValue && wo.DTs.DateTimeStopEnd.HasValue)
                             {
-                                wo.DTs.DownTime = Convert.ToSingle(wo.DTs.DateTimeStopEnd.Value.Subtract(wo.DTs.DateTimeStop.Value).TotalMinutes/60);
+                                wo.DTs.DownTime = Convert.ToSingle(wo.DTs.DateTimeStopEnd.Value.Subtract(wo.DTs.DateTimeStop.Value).TotalMinutes / 60);
                             }
 
                             if (dTOld != null)
@@ -685,7 +716,7 @@ namespace IdylAPI.Services.Repository.WO
                             }
                             else
                             {
-                               
+
                                 parameters = new DynamicParameters();
                                 parameters.Add("@DTNo", wo.DTs.DTNo, DbType.Int32, ParameterDirection.Output);
                                 parameters.Add("@DTDate", woOld.WODate);
@@ -849,6 +880,33 @@ namespace IdylAPI.Services.Repository.WO
                         if (wo.ActDate.HasValue && woOld.WOStatusNo != 3)
                         {
                             new Notify.NotifyRepository(_configuration).Send(wo.WONo, "FINISH", wo.CompanyNo, user.CustomerNo);
+
+                            string cmd = $" select * from customer where customerno={woOld.CraftNo}";
+                            Customer section = conn.QueryFirst<Customer>(cmd, parameters, commandType: Text);
+
+                            if (section.IsSendLine.HasValue && section.IsSendLine.Value)
+                            {
+                                string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{4}| อาการ/ปัญหา: {0}| วันที่เสร็จงาน: {1}| {3}"
+                                    , woOld.WorkDesc
+                                    , wo.ActDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                    , woOld.WOCode
+                                    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"
+                                    , $"{woOld.EQCode};{woOld.EQName}");
+
+                                new SendNotify(_configuration).LineNotify(msg, section.LineToken);
+                            }
+                            if (section.IsSendEmail.HasValue && section.IsSendEmail.Value)
+                            {
+                                string dateTime = wo.ActDate.Value.ToString("dd/MM/yyyy HH:mm");
+                                Mail.SendEmail(_configuration, new MailReq()
+                                {
+                                    Content = $"<br/><b>อาการ/ปัญหา: </b>{woOld.WorkDesc}<br/><br/><b>วันที่เสร็จงาน: </b>{dateTime}<br/>",
+                                    DocCode = woOld.WOCode,
+                                    DocLink = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}",
+                                    FromPage = "WO",
+                                    Receive = section.Email
+                                });
+                            }
                         }
 
                         result.ErrMsg = "บันทึกเรียบร้อย";

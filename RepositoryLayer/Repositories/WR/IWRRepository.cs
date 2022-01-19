@@ -13,5 +13,6 @@ namespace IdylAPI.Services.Interfaces.WR
         Result Insert(Models.WO.WO wo, Models.Authorize.User user);
         Result CreateWR (Models.WO.WO wo);
         Result RetriveForReportProblem(int siteNo, int systemNo);
+        Result CreateWR(DomainLayer.Entities.WR wr);
     }
 }

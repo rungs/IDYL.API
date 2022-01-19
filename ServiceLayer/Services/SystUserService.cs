@@ -64,6 +64,7 @@ namespace SocialMedia.Core.Services
                         else
                         {
                             IEnumerable<SystUser> systs = _unitOfWork.SystUserRepository.CheckUsernameDupicate(systUser.Username);
+                            newUsername = systUser.Username;
                             if (systs.Count() > 0)
                             {
                                 Random rnd = new Random();
@@ -257,8 +258,9 @@ namespace SocialMedia.Core.Services
                             UserNo = user.UserNo,
                             MenuId = item.MenuID,
                             ActionId = item.ActionID,
-                            IsActive = !item.FlagAdminOnly
+                            IsActive = userGroupId == 5 && item.ActionID == 30? false : !item.FlagAdminOnly 
                         };
+                        
                         await _unitOfWork.SystPermissionsActionRepository.Add(formPermission);
                     }
 
@@ -407,7 +409,7 @@ namespace SocialMedia.Core.Services
                             UserNo = user.UserNo,
                             MenuId = item.MenuID,
                             ActionId = item.ActionID,
-                            IsActive = !item.FlagAdminOnly
+                            IsActive = userObj.UserGroupId == 5 && item.ActionID == 30 ? false : !item.FlagAdminOnly
                         };
                         await _unitOfWork.SystPermissionsActionRepository.Add(formPermission);
                     }

@@ -20,5 +20,9 @@ namespace IdylAPI.Models.Master
         public int? CreatedBy { get; set; }
         public DateTime? CreateDate { get; set; }
         public bool IsDelete { get; set; }
+        public bool? IsSendEmail { get; set; }
+        public bool? IsSendLine { get; set; } 
+        public string LineToken { get; set; }
+        public string Email { get; set; }
     }
 }

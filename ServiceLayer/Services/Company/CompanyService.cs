@@ -308,6 +308,16 @@ namespace SocialMedia.Core.Services
                     #endregion
                 }
 
+                ProblemType problemType = new ProblemType()
+                {
+                    SectionNo = newSectionNo,
+                    ProblemTypeCode = "MNT",
+                    ProblemTypeName = "Maintenance",
+                    CompanyNo = newCompanyNo,
+                    IsDelete = false,
+                };
+                await _unitOfWork.ProblemTypeRepository.Add(problemType);
+                await _unitOfWork.SaveChangesAsync();
 
                 SysConfig sysConfig = new SysConfig()
                 {
@@ -337,7 +347,7 @@ namespace SocialMedia.Core.Services
                 {
                     ConfigName = "PREVDAYS",
                     ConfigType = "GENPMAUTO",
-                    ConfigValue = "1",
+                    ConfigValue = "3",
                     CompanyNo = newCompanyNo
                 };
                 await _unitOfWork.SystConfigRepository.Add(sysConfig);
@@ -543,38 +553,14 @@ namespace SocialMedia.Core.Services
                     await _unitOfWork.SaveChangesAsync();
                 }
 
-                SysConfig sysConfig = new SysConfig()
+                IEnumerable<SysConfig> sysConfigs = _unitOfWork.SystConfigRepository.GetConfigByCompanyNo(oldCompanyNo);
+                foreach (SysConfig item in sysConfigs)
                 {
-                    ConfigName = "DIGIT",
-                    ConfigType = "SRRUNNING",
-                    ConfigValue = "3",
-                    CompanyNo = newCompanyNo
-                };
-                await _unitOfWork.SystConfigRepository.Add(sysConfig);
-                sysConfig = new SysConfig()
-                {
-                    ConfigName = "SYSTEM",
-                    ConfigType = "TABLECAPTION",
-                    ConfigValue = "System",
-                    CompanyNo = newCompanyNo
-                };
-                await _unitOfWork.SystConfigRepository.Add(sysConfig);
-                sysConfig = new SysConfig()
-                {
-                    ConfigName = "ACTIVE",
-                    ConfigType = "GENPMAUTO",
-                    ConfigValue = "Y",
-                    CompanyNo = newCompanyNo
-                };
-                await _unitOfWork.SystConfigRepository.Add(sysConfig);
-                sysConfig = new SysConfig()
-                {
-                    ConfigName = "PREVDAYS",
-                    ConfigType = "GENPMAUTO",
-                    ConfigValue = "1",
-                    CompanyNo = newCompanyNo
-                };
-                await _unitOfWork.SystConfigRepository.Add(sysConfig);
+                    item.CompanyNo = newCompanyNo;
+                    await _unitOfWork.SystConfigRepository.Add(item);
+                }
+                await _unitOfWork.SaveChangesAsync();
+                
                 SystPermissionsActionCompany systPermissionsActionCompany = new SystPermissionsActionCompany()
                 {
                     CompanyNo = newCompanyNo,
