@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Syst;
+﻿using Dapper;
+using Domain.Entities.Syst;
 using Domain.Interfaces;
 using IdylAPI.Models;
 using IdylAPI.Models.Authorize;
@@ -12,11 +13,12 @@ using OfficeOpenXml;
 using PAUtility;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using SystUser = IdylAPI.Models.Syst.SystUser;
-
+using static System.Data.CommandType;
 namespace SocialMedia.Core.Services
 {
     public class CompanyService : ICompanyService
@@ -24,12 +26,14 @@ namespace SocialMedia.Core.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly IHostingEnvironment _host;
+        private readonly string _connStr;
 
         public CompanyService(IUnitOfWork unitOfWork, IConfiguration configuration, IHostingEnvironment host)
         {
             _unitOfWork = unitOfWork;
             _host = host;
             _configuration = configuration;
+            _connStr = _configuration.GetConnectionString("IDYLConnection");
         }
 
         public async Task<Site> GetCompanyById(int id)
@@ -737,6 +741,26 @@ namespace SocialMedia.Core.Services
             return _unitOfWork.CompanyRepository.GetCompanyProductKeyUser(productkey, userid);
         }
 
-
+        public void ClearData(int companyNo)
+        {
+            using (SqlConnection conn = new SqlConnection(_connStr))
+            {
+                conn.Open();
+                using (SqlTransaction trans = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        DynamicParameters parameters = new DynamicParameters();
+                        parameters.Add("@CompanyNo", companyNo);
+                        conn.Execute("sp_ResetCompany", parameters, commandType: StoredProcedure, transaction: trans);
+                        trans.Commit();
+                    }
+                    catch
+                    {
+                        trans.Rollback();
+                    }
+                }
+            }
+        }
     }
 }

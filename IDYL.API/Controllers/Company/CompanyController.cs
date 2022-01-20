@@ -109,5 +109,12 @@ namespace IdylAPI.Controllers.Authorize
             var posts =  _companyService.GetCompanyProductKeyUser(productkey, userid);
             return Ok(posts);
         }
+
+        [HttpPost("clear/{companyNo}")]
+        public IActionResult ClearData(int companyNo)
+        {
+             _companyService.ClearData(companyNo);
+            return Ok();
+        }
     }
 }

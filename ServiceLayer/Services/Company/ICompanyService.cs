@@ -15,6 +15,7 @@ namespace IdylAPI.Services.Interfaces.Company
         IEnumerable<Site> GetCompanyByUserId(int userId);
         Task DeleteCompany(int id, User user);
         Task UpdateSubsite(Site site, User user);
+        void ClearData(int companyNo);
         Task<Site> InsertSubsite(Site site, User user);
         IEnumerable<Site> GetCompanyProductKeyUser(string productkey, int userid);
     }
