@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Hosting;
 using IdylAPI.Helper;
 using DomainLayer.Entities;
 using IdylAPI.Models.Master;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace IdylAPI.Services.Repository.WR
 {
@@ -147,6 +148,9 @@ namespace IdylAPI.Services.Repository.WR
                             parameters.Add("@WOTypeNo", wo.WOTypeNo);
                             parameters.Add("@ProblemTypeNo", wo.ProblemTypeNo);
                             parameters.Add("@ReqDate", wo.ReqDate);
+                            parameters.Add("@ReqName", wo.ReqName);
+                            parameters.Add("@ReqPhone", wo.ReqPhone);
+                            parameters.Add("@ReqEmail", wo.ReqEmail);
 
                             conn.Query<int>("msp_WO_Insert", parameters, commandType: StoredProcedure, transaction: trans);
                             wo.WONo = parameters.Get<int>("@WONo");
@@ -246,16 +250,23 @@ namespace IdylAPI.Services.Repository.WR
 
                             if (section.IsSendLine.HasValue && section.IsSendLine.Value)
                             {
-                                string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{7}| อาการ/ปัญหา: {0}| วันที่แจ้ง: {1}" +
-                                    "| วันที่เกิดปัญหา: {3} | หน่วยงานแจ้ง: {4} | ผู้แจ้ง: {5}| {6}"
-                                    , wo.WorkDesc
-                                    , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
-                                    , woOld.WOCode
-                                    , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
-                                    , section.SectionName
-                                , woOld.ReqName
-                                , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"
-                                , $"{woOld.EQCode};{woOld.EQName}");
+                                string wrDate = woOld.WRDate.HasValue ? woOld.WRDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+                                string woDate = woOld.WODate.HasValue ? woOld.WODate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+
+                                string msg = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc}\n วันที่แจ้ง: {wrDate}\n วันที่เกิดปัญหา: {woDate} \n หน่วยงานแจ้ง: {section.SectionName} \n ผู้แจ้ง: {woOld.ReqName} \n เบอร์ผู้แจ้ง: {woOld.ReqPhone} \n อีเมล์ผู้แจ้ง: {woOld.ReqEmail} \n {$"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}"}";
+
+                                //string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{7}| อาการ/ปัญหา: {0}| วันที่แจ้ง: {1}" +
+                                //"| วันที่เกิดปัญหา: {3} | หน่วยงานแจ้ง: {4} | ผู้แจ้ง: {5}| {6} | เบอร์ผู้แจ้ง: {8} | อีเมล์ผู้แจ้ง: {9}"
+                                //    , wo.WorkDesc
+                                //    , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
+                                //    , woOld.WOCode
+                                //    , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
+                                //    , section.SectionName
+                                //    , woOld.ReqName
+                                //    , $"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}"
+                                //    , $"{woOld.EQCode};{woOld.EQName}"
+                                //    , woOld.ReqPhone
+                                //    , woOld.ReqEmail);
 
                                 new SendNotify(_configuration).LineNotify(msg, section.LineToken);
                             }
@@ -264,15 +275,17 @@ namespace IdylAPI.Services.Repository.WR
                                 Mail.SendEmail(_configuration, new MailReq()
                                 {
                                     Content = string.Format("{3}<br/><b>อาการ/ปัญหา: </b>{0}<br/><br/><b>วันที่แจ้ง: </b>{1}<br/>" +
-                                        "<b>วันที่เกิดปัญหา: </b>{2}<br/><b>หน่วยงานแจ้ง: </b>{4}<br/><b>ผู้แจ้ง: </b>{5}<br/>"
+                                        "<b>วันที่เกิดปัญหา: </b>{2}<br/><b>หน่วยงานแจ้ง: </b>{4}<br/><b>ผู้แจ้ง: </b>{5}<br/><b>เบอร์ผู้แจ้ง: </b>{6}<br/><b>อีเมล์ผู้แจ้ง: </b>{7}<br/>"
                                         , wo.WorkDesc
                                         , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
                                         , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
                                         , woOld.WOCode
                                         , section.SectionName
-                                        , woOld.ReqName),
+                                        , woOld.ReqName
+                                        , woOld.ReqPhone
+                                        , woOld.ReqEmail),
                                     DocCode = woOld.WOCode,
-                                    DocLink = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}",
+                                    DocLink = $"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}",
                                     FromPage = "WR",
                                     Receive = section.Email
                                 });

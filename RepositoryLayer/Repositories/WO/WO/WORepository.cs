@@ -601,11 +601,15 @@ namespace IdylAPI.Services.Repository.WO
 
                             if (craft.IsSendLine.HasValue && craft.IsSendLine.Value)
                             {
-                                string msg = string.Format("IDYL: {2}| อาการ/ปัญหา: {0}| ประมาณวันเริ่มเวลา: {1}| {3}"
-                                    , wo.WorkDesc
-                                    , wo.PlnDate!= null ? Convert.ToDateTime(wo.PlnDate).ToString("dd/MM/yyyy HH:mm") : ""
-                                    , woOld.WOCode
-                                    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}");
+                                string plnDate = wo.PlnDate.HasValue ? wo.PlnDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+                                string msg = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc} \n ประมาณวันเริ่มเวลา: {plnDate}\n {$"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"}";
+
+
+                                //string msg = string.Format("IDYL: {2}| อาการ/ปัญหา: {0}| ประมาณวันเริ่มเวลา: {1}| {3}"
+                                //    , wo.WorkDesc
+                                //    , wo.PlnDate!= null ? Convert.ToDateTime(wo.PlnDate).ToString("dd/MM/yyyy HH:mm") : ""
+                                //    , woOld.WOCode
+                                //    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}");
 
                                 new SendNotify(_configuration).LineNotify(msg, craft.LineToken);
                             }
@@ -886,12 +890,8 @@ namespace IdylAPI.Services.Repository.WO
 
                             if (section.IsSendLine.HasValue && section.IsSendLine.Value)
                             {
-                                string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{4}| อาการ/ปัญหา: {0}| วันที่เสร็จงาน: {1}| {3}"
-                                    , woOld.WorkDesc
-                                    , wo.ActDate.Value.ToString("dd/MM/yyyy HH:mm")
-                                    , woOld.WOCode
-                                    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"
-                                    , $"{woOld.EQCode};{woOld.EQName}");
+                                string actFinishDate = Convert.ToDateTime(wo.ActDate).ToString("dd/MM/yyyy HH:mm");
+                                string msg  = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc}\n วันที่เสร็จงาน: {actFinishDate}\n {$"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"}";
 
                                 new SendNotify(_configuration).LineNotify(msg, section.LineToken);
                             }

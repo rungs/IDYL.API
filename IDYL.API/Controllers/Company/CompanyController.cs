@@ -19,6 +19,10 @@ namespace IdylAPI.Controllers.Authorize
             _companyService = companyService;
         }
 
+        /// <summary>
+        /// Create First Site(MainSite)
+        /// </summary>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Company(Site site)
         {

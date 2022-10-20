@@ -55,8 +55,9 @@ namespace IdylAPI.Helper
         {
             try
             {
+                string message = System.Web.HttpUtility.UrlEncode(msg, Encoding.UTF8);
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://notify-api.line.me/api/notify");
-                string postData = string.Format("message={0}", msg);
+                string postData = string.Format("message={0}", message);
                 byte[] data = Encoding.UTF8.GetBytes(postData);
 
                 request.Method = "POST";
@@ -74,9 +75,8 @@ namespace IdylAPI.Helper
             }
             catch (Exception ex)
             {
-                //Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex.ToString());
             }
-
         }
     }
 }

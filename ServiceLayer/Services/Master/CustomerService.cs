@@ -65,7 +65,7 @@ namespace IdylAPI.Services.Master
                     CreatedDate = updatedDate,
                     UpdatedDate = updatedDate,
                     IsSuperUser = false,
-                    NotSeeAuto_AuthenLocation = false,
+                    NotSeeAuto_AuthenLocation = UserGroupId == 4,
                     ActivateCode = Guid.NewGuid().ToString(),
                     IsActivate = true,
                     ExpiredDate = site.ExpiredDate,

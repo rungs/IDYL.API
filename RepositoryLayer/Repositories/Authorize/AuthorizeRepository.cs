@@ -102,6 +102,8 @@ namespace IdylAPI.Services.Repository.Authorize
                     parameters.Add("@UserNo", user.UserNo);
                     loginResponse.PermissionAction = SqlMapper.Query<FormPermissionAction>(conn, sql, parameters, commandType: StoredProcedure);
 
+                    loginResponse.SysConfig = _context.SysConfig.Where(t => t.CompanyNo == user.CompanyNo && t.ConfigType == "TABLECAPTION");
+                   
                     string pPath = _host.ContentRootPath;
                     int pathLevel = InputVal.ToInt(_configuration["PathLevel"]);
                     for (int j = 0; j <= pathLevel; j++)

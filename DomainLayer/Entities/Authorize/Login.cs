@@ -51,6 +51,7 @@ namespace IdylAPI.Models.Authorize
         public IEnumerable<FormPermissionData> PermissionData { get; set; }
         public IEnumerable<FormPermissionAction> PermissionAction { get; set; }
         public IEnumerable<UserGroupPermission> UserGroupPermissions{ get; set; }
+        public IEnumerable<SysConfig> SysConfig { get; set; }
         public UserGroupDefaultInfo UserGroupDefaultInfo { get; set; }
         public User UserInfo { get; set; }
     }

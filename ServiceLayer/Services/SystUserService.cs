@@ -225,7 +225,7 @@ namespace SocialMedia.Core.Services
                         UpdatedDate = updatedDate,
                         IsSuperUser = false,
                         UserGroupId = userGroupId,
-                        NotSeeAuto_AuthenLocation = false,
+                        NotSeeAuto_AuthenLocation = userGroupId == 4,
                         ActivateCode = Guid.NewGuid().ToString(),
                         IsActivate = false
                     };
@@ -376,7 +376,7 @@ namespace SocialMedia.Core.Services
                         UpdatedDate = updatedDate,
                         IsSuperUser = false,
                         UserGroupId = userObj.UserGroupId,
-                        NotSeeAuto_AuthenLocation = false,
+                        NotSeeAuto_AuthenLocation = userObj.UserGroupId == 4,
                         ActivateCode = Guid.NewGuid().ToString(),
                         IsActivate = false,
                     };

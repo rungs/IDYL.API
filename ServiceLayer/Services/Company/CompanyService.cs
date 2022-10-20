@@ -341,6 +341,22 @@ namespace SocialMedia.Core.Services
                 await _unitOfWork.SystConfigRepository.Add(sysConfig);
                 sysConfig = new SysConfig()
                 {
+                    ConfigName = "WODATE",
+                    ConfigType = "TABLECAPTION",
+                    ConfigValue = "วันที่ออกงาน",
+                    CompanyNo = newCompanyNo
+                };
+                await _unitOfWork.SystConfigRepository.Add(sysConfig);
+                sysConfig = new SysConfig()
+                {
+                    ConfigName = "REQDATE",
+                    ConfigType = "TABLECAPTION",
+                    ConfigValue = "วันที่ต้องการเสร็จ",
+                    CompanyNo = newCompanyNo
+                };
+                await _unitOfWork.SystConfigRepository.Add(sysConfig);
+                sysConfig = new SysConfig()
+                {
                     ConfigName = "ACTIVE",
                     ConfigType = "GENPMAUTO",
                     ConfigValue = "Y",
