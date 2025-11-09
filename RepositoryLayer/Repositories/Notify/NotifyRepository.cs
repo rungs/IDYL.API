@@ -359,12 +359,12 @@ namespace IdylAPI.Services.Repository.Notify
             }
         }
 
-        public void InsertNotifyLog(int sendNo, int receiveNo, string msg, DateTime sendDate, string receiveToken, Task<HttpResponseMessage> result, string roleName)
+        public void InsertNotifyLog(int sendNo, int receiveNo, string msg, DateTime sendDate, string receiveToken, string roleName)
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
                 conn.Open();
-                string cmd = $" insert into msg_NotifyLog values({sendNo},{receiveNo},'{msg}','{sendDate}','{receiveToken}','{result.Result.ReasonPhrase}','{roleName}') ";
+                string cmd = $" insert into msg_NotifyLog values({sendNo},{receiveNo},'{msg}','{sendDate}','{receiveToken}','','{roleName}') ";
                 SqlMapper.Execute(conn, cmd, null, commandType: Text);
             }
         }
@@ -485,7 +485,7 @@ namespace IdylAPI.Services.Repository.Notify
             }
         }
 
-        public void SendMsg(IEnumerable<NotifyToken> tokens, string title, string msg, int from, int companyNo, string action, int woNo, string woCode)
+        public async Task SendMsg(IEnumerable<NotifyToken> tokens, string title, string msg, int from, int companyNo, string action, int woNo, string woCode)
         {
             if (action == "REQUEST")
             {
@@ -552,8 +552,8 @@ namespace IdylAPI.Services.Repository.Notify
                     };
 
                     InsertDocumentHistory(documentHistoryInfo);
-                    Task<HttpResponseMessage> resultMsg = new SendNotify(_configuration).Send(title, msg, item.Token, notiData);
-                    InsertNotifyLog(from, item.CustomerNo, msg, DateTime.Now, item.Token, resultMsg, item.RoleName);
+                    await new SendNotify(_configuration).Send(title, msg, item.Token, notiData);
+                    InsertNotifyLog(from, item.CustomerNo, msg, DateTime.Now, item.Token, item.RoleName);
                 }
             }
         }
@@ -612,7 +612,7 @@ namespace IdylAPI.Services.Repository.Notify
                         siteNo = notiObj.siteNo
                     };
 
-                    Task<HttpResponseMessage> resultMsg = new SendNotify(_configuration).Send(notiObj.title, notiObj.body, item.Token, notiData);
+                    new SendNotify(_configuration).Send(notiObj.title, notiObj.body, item.Token, notiData);
 
                 }
 
@@ -665,8 +665,8 @@ namespace IdylAPI.Services.Repository.Notify
                             CreateBy = user.CustomerNo
                         };
                         InsertDocumentHistory(documentHistoryInfo);
-                        Task<HttpResponseMessage> resultMsg = new SendNotify(_configuration).Send(item.docCode, "เพื่อทราบ-" + item.body, obj.Token, notiData);
-                        InsertNotifyLog(user.CustomerNo, obj.CustomerNo, documentHistoryInfo.AssignMessage, DateTime.Now, obj.Token, resultMsg, "เพื่อทราบ");
+                        new SendNotify(_configuration).Send(item.docCode, "เพื่อทราบ-" + item.body, obj.Token, notiData);
+                        InsertNotifyLog(user.CustomerNo, obj.CustomerNo, documentHistoryInfo.AssignMessage, DateTime.Now, obj.Token, "เพื่อทราบ");
 
                     }
 

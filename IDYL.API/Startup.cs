@@ -1,3 +1,5 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using IdylAPI;
 using IdylAPI.Services.Interfaces;
 using IdylAPI.Services.Interfaces.Authorize;
@@ -27,6 +29,7 @@ using Microsoft.OpenApi.Models;
 using Persistence.Contexts;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Text;
 
 namespace IDYL.API
@@ -127,15 +130,18 @@ namespace IDYL.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
+            FirebaseApp.Create(new AppOptions()
             {
-                app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "IDYL.API v1"));
-            }
+                Credential = GoogleCredential.FromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "idylpmmobile-firebase-adminsdk.json")),
+            });
+
+            app.UseDeveloperExceptionPage();
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "IDYL.API v1"));
+
             app.UseCors("CorsPolicy");
 
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseRouting();
 

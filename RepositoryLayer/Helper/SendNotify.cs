@@ -1,13 +1,14 @@
-﻿using IdylAPI.Models.Notify;
+﻿using FirebaseAdmin.Messaging;
+using IdylAPI.Models.Notify;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace IdylAPI.Helper
 {
     public class SendNotify
@@ -21,34 +22,50 @@ namespace IdylAPI.Helper
             _connStr = _configuration.GetConnectionString("IDYLConnection");
         }
 
-        public async Task<HttpResponseMessage> Send(string title, string body, string token, NotiData notiData)
+        public async Task Send(string title, string body, string token, NotiData notiData)
         {
-            var messageInformation = new PushNotify()
+            //var messageInformation = new PushNotify()
+            //{
+            //    notification = new NotificationInfo()
+            //    {
+            //        title = title,
+            //        body = body,
+            //        android_channel_id = "idylmobile-channel"
+            //    },
+            //    to = token,
+            //    data = notiData
+            //};
+
+            var message = new Message()
             {
-                notification = new NotificationInfo()
+                Notification = new Notification
                 {
-                    title = title,
-                    body = body,
-                    android_channel_id = "idylmobile-channel"
+                    Title = title,
+                    Body = body,
                 },
-                to = token,
-                data = notiData
+                Data = new Dictionary<string, string>()
+                {
+                    ["docType"] = notiData.docType,
+                    ["docNo"] = notiData.docNo.ToString(),
+                    ["siteNo"] = notiData.siteNo.ToString(),
+                    ["docCode"] = notiData.docCode,
+                },
+                Token = token,
+                Android = new AndroidConfig()
+                {
+                    Notification = new AndroidNotification()
+                    {
+                        ChannelId = "idylmobile-channel", // 👈 This must match the channel created in the app
+                        Sound = "default",
+                        Priority = (NotificationPriority?)Priority.High
+                    }
+                }
             };
 
+            var messaging = FirebaseMessaging.DefaultInstance;
+            var result = await messaging.SendAsync(message);
 
-            string jsonMessage = JsonConvert.SerializeObject(messageInformation);
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://fcm.googleapis.com/fcm/send");
-            request.Headers.TryAddWithoutValidation("Authorization", string.Format("key={0}", _configuration["firebaseSecret"]));
-            request.Content = new StringContent(jsonMessage, Encoding.UTF8, "application/json");
-            HttpResponseMessage result;
-            using (var client = new HttpClient())
-            {
-                result = client.SendAsync(request).Result;
-                //result = await client.SendAsync(request);
-               
-              
-            }
-            return result;
+           
         }
 
         public void LineNotify(string msg, string token)
@@ -77,6 +94,37 @@ namespace IdylAPI.Helper
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        public enum LineNotifyType
+        {
+            WRCreated,
+            WOFinished,
+            WOPlaned
+        }
+
+        public string GenerateMessageSendNotify(LineNotifyType notifyType, Models.WO.WO wOInfo, string linkDoc, string sectReq, Models.WO.WO wONew)
+        {
+            string msg = string.Empty;
+            switch (notifyType)
+            {
+                case LineNotifyType.WRCreated:
+                    string wrDate = wOInfo.WRDate.HasValue ? wOInfo.WRDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+                    string woDate = wOInfo.WODate.HasValue ? wOInfo.WODate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+                    msg = $"IDYL: {wOInfo.WOCode}\n รหัส/ชื่ออุปกรณ์:{wOInfo.EQCode};{wOInfo.EQName}\n รหัส/ชื่อสถานที่/หน่วยผลิต:{wOInfo.LocationCode};{wOInfo.LocationName}\n อาการ/ปัญหา: {wOInfo.WorkDesc}\n วันที่แจ้ง: {wrDate}\n วันที่เกิดปัญหา: {woDate} \n หน่วยงานแจ้ง: {sectReq} \n ผู้แจ้ง: {wOInfo.ReqNameText} \n เบอร์ผู้แจ้ง: {wOInfo.ReqPhone} \n อีเมล์ผู้แจ้ง: {wOInfo.ReqEmail} \n {linkDoc}";
+                    break;
+                case LineNotifyType.WOFinished:
+                    string actFinishDate = Convert.ToDateTime(wONew.ActDate).ToString("dd/MM/yyyy HH:mm");
+                    msg = $"IDYL: {wOInfo.WOCode}\n รหัส/ชื่ออุปกรณ์:{wOInfo.EQCode};{wOInfo.EQName}\n รหัส/ชื่อสถานที่/หน่วยผลิต:{wOInfo.LocationCode};{wOInfo.LocationName}\n อาการ/ปัญหา: {wOInfo.WorkDesc}\n วันที่เสร็จงาน: {actFinishDate}\n {linkDoc}";
+                    break;
+                case LineNotifyType.WOPlaned:
+                    string plnDate = wONew.PlnDate.HasValue ? wONew.PlnDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
+                    msg = $"IDYL: {wOInfo.WOCode}\n รหัส/ชื่ออุปกรณ์:{wOInfo.EQCode};{wOInfo.EQName}\n รหัส/ชื่อสถานที่/หน่วยผลิต:{wOInfo.LocationCode};{wOInfo.LocationName}\n อาการ/ปัญหา: {wOInfo.WorkDesc} \n ประมาณวันเริ่มเวลา: {plnDate}\n {linkDoc}";
+                    break;
+                default:
+                    break;
+            }
+            return msg;
         }
     }
 }

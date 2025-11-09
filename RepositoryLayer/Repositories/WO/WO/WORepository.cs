@@ -15,6 +15,8 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using static IdylAPI.Helper.SendNotify;
+using static System.Collections.Specialized.BitVector32;
 using static System.Data.CommandType;
 namespace IdylAPI.Services.Repository.WO
 {
@@ -557,39 +559,15 @@ namespace IdylAPI.Services.Repository.WO
                         }
 
                         parameters = new DynamicParameters();
-                        parameters.Add("@WONo", woOld.WONo);
-                        parameters.Add("@WOStatusNo", woOld.WOStatusNo);
-                        parameters.Add("@WRCode", woOld.WRCode);
-                        parameters.Add("@WRDate", woOld.WRDate);
-                        parameters.Add("@EQNo", woOld.EQNo);
-                        parameters.Add("@LocationNo", woOld.LocationNo);
-                        parameters.Add("@WorkDesc", woOld.WorkDesc);
-                        parameters.Add("@SectReq", woOld.SectReq);
-                        parameters.Add("@Requester", woOld.Requester);
-                        parameters.Add("@CompanyNo", woOld.CompanyNo);
+                        parameters.Add("@WONo", wo.WONo);
                         parameters.Add("@UpdatedBy", user.CustomerNo);
                         parameters.Add("@SectionNo", wo.SectionNo);
                         parameters.Add("@CraftNo", wo.CraftNo);
                         parameters.Add("@PlnDate", wo.PlnDate);
                         parameters.Add("@PlnDuration", wo.PlnDuration);
-                        parameters.Add("@PlnManHours", woOld.PlnManHours);
-                        parameters.Add("@WOAction", woOld.WOAction);
-                        parameters.Add("@ActDate", woOld.ActDate);
-                        parameters.Add("@ActTime", woOld.ActTime);
-                        parameters.Add("@ActDuration", woOld.ActDuration);
-                        parameters.Add("@ActManHours", woOld.ActManHours);
-                        parameters.Add("@Meter", woOld.Meter);
-                        parameters.Add("@WOCause", woOld.WOCause);
                         parameters.Add("@WOTypeNo", wo.WOTypeNo);
-                        parameters.Add("@CostMH", woOld.CostMH);
-                        parameters.Add("@CostStock", woOld.CostStock);
-                        parameters.Add("@CostDirectPurchase", woOld.CostDirectPurchase);
-                        parameters.Add("@CostTools", woOld.CostTools);
-                        parameters.Add("@CostOutsources", woOld.CostOutsources);
-                        parameters.Add("@CostCrafts", woOld.CostCrafts);
-
-
-                        conn.Execute("sp_WO_Update", parameters, commandType: StoredProcedure, transaction: trans);
+                     
+                        conn.Execute("msp_WO_UpdatePlan", parameters, commandType: StoredProcedure, transaction: trans);
 
                         trans.Commit();
                         result.ErrMsg = "บันทึกเรียบร้อย";
@@ -601,16 +579,9 @@ namespace IdylAPI.Services.Repository.WO
 
                             if (craft.IsSendLine.HasValue && craft.IsSendLine.Value)
                             {
-                                string plnDate = wo.PlnDate.HasValue ? wo.PlnDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
-                                string msg = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc} \n ประมาณวันเริ่มเวลา: {plnDate}\n {$"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"}";
-
-
-                                //string msg = string.Format("IDYL: {2}| อาการ/ปัญหา: {0}| ประมาณวันเริ่มเวลา: {1}| {3}"
-                                //    , wo.WorkDesc
-                                //    , wo.PlnDate!= null ? Convert.ToDateTime(wo.PlnDate).ToString("dd/MM/yyyy HH:mm") : ""
-                                //    , woOld.WOCode
-                                //    , $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}");
-
+                                string linkDoc = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}";
+                                string msg = new SendNotify(_configuration).GenerateMessageSendNotify(LineNotifyType.WOPlaned, woOld, linkDoc, "", wo);
+                                
                                 new SendNotify(_configuration).LineNotify(msg, craft.LineToken);
                             }
                             if (craft.IsSendEmail.HasValue && craft.IsSendEmail.Value)
@@ -655,40 +626,22 @@ namespace IdylAPI.Services.Repository.WO
                         Models.WO.WO woOld = conn.QueryFirst<Models.WO.WO>("sp_WO_GetByNo", parameters, commandType: StoredProcedure, transaction: trans);
 
                         parameters = new DynamicParameters();
-                        parameters.Add("@WONo", woOld.WONo);
+                        parameters.Add("@WONo", wo.WONo);
                         parameters.Add("@WOStatusNo", woOld.WOStatusNo);
-                        parameters.Add("@WRCode", woOld.WRCode);
-                        parameters.Add("@WRDate", woOld.WRDate);
                         parameters.Add("@EQNo", woOld.EQNo);
-                        parameters.Add("@LocationNo", woOld.LocationNo);
-                        parameters.Add("@WorkDesc", woOld.WorkDesc);
-                        parameters.Add("@SectReq", woOld.SectReq);
-                        parameters.Add("@Requester", woOld.Requester);
-                        parameters.Add("@CompanyNo", woOld.CompanyNo);
                         parameters.Add("@UpdatedBy", user.CustomerNo);
-                        parameters.Add("@SectionNo", woOld.SectionNo);
                         parameters.Add("@CraftNo", woOld.CraftNo);
                         parameters.Add("@PlnDate", woOld.PlnDate);
-                        parameters.Add("@PlnDuration", woOld.PlnDuration);
-                        parameters.Add("@PlnManHours", woOld.PlnManHours);
                         parameters.Add("@WOAction", wo.WOAction);
                         parameters.Add("@ActDateStart", PAUtility.ValDBDapper.GetDateTime(wo.ActDateStart));
                         parameters.Add("@ActDate", wo.ActDate);
-                        parameters.Add("@ActTime", woOld.ActTime);
                         parameters.Add("@ActDuration", wo.ActDuration);
-                        parameters.Add("@ActManHours", woOld.ActManHours);
                         parameters.Add("@Meter", wo.Meter);
                         parameters.Add("@WOCause", wo.WOCause);
                         parameters.Add("@WOTypeNo", woOld.WOTypeNo);
-                        parameters.Add("@CostMH", woOld.CostMH);
-                        parameters.Add("@CostStock", woOld.CostStock);
-                        parameters.Add("@CostDirectPurchase", woOld.CostDirectPurchase);
-                        parameters.Add("@CostTools", woOld.CostTools);
-                        parameters.Add("@CostOutsources", woOld.CostOutsources);
-                        parameters.Add("@CostCrafts", woOld.CostCrafts);
                         parameters.Add("@SystemNo", wo.SystemNo);
 
-                        conn.Execute("sp_WO_Update", parameters, commandType: StoredProcedure, transaction: trans);
+                        conn.Execute("msp_WO_UpdateActual", parameters, commandType: StoredProcedure, transaction: trans);
 
                         if (wo.IsDowntime)
                         {
@@ -890,8 +843,8 @@ namespace IdylAPI.Services.Repository.WO
 
                             if (section.IsSendLine.HasValue && section.IsSendLine.Value)
                             {
-                                string actFinishDate = Convert.ToDateTime(wo.ActDate).ToString("dd/MM/yyyy HH:mm");
-                                string msg  = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc}\n วันที่เสร็จงาน: {actFinishDate}\n {$"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}"}";
+                                string linkDoc = $"{_configuration["IdylWeb"]}/Form/WO/WOEdit.aspx?WONo={wo.WONo}";
+                                string msg = new SendNotify(_configuration).GenerateMessageSendNotify(LineNotifyType.WOFinished, woOld, linkDoc, "", wo);
 
                                 new SendNotify(_configuration).LineNotify(msg, section.LineToken);
                             }

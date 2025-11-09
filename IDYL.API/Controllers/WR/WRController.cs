@@ -35,11 +35,19 @@ namespace IdylAPI.Controllers.WR
             return Ok(_wrRepository.RetriveById(id));
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("v1")]
         public OkObjectResult Insert([FromBody] Models.WO.WO wo)
-        {
-            Result result = _wrRepository.Insert(wo, TokenHelper.DecodeTokenToInfo(HttpContext));
+        {//, TokenHelper.DecodeTokenToInfo(HttpContext)
+            Result result = _wrRepository.Insert(wo, new Models.Authorize.User()
+            {
+                UserNo = 697,
+                CustomerNo = 1,
+                CustomerName = "test",
+                Username = "test",
+                SectionNo = 1,
+                UserGroupId = 1
+            });
             _chatHubContext.Clients.All.BroadcastMessage();
             return Ok(result);
         }

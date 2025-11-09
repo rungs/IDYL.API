@@ -17,6 +17,7 @@ using IdylAPI.Helper;
 using DomainLayer.Entities;
 using IdylAPI.Models.Master;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static IdylAPI.Helper.SendNotify;
 
 namespace IdylAPI.Services.Repository.WR
 {
@@ -250,23 +251,8 @@ namespace IdylAPI.Services.Repository.WR
 
                             if (section.IsSendLine.HasValue && section.IsSendLine.Value)
                             {
-                                string wrDate = woOld.WRDate.HasValue ? woOld.WRDate.Value.ToString("dd/MM/yyyy HH:mm") : "";
-                                string woDate = woOld.WODate.HasValue ? woOld.WODate.Value.ToString("dd/MM/yyyy HH:mm") : "";
-
-                                string msg = $"IDYL: {woOld.WOCode}\n รหัส/ชื่ออุปกรณ์:{woOld.EQCode};{woOld.EQName}\n อาการ/ปัญหา: {woOld.WorkDesc}\n วันที่แจ้ง: {wrDate}\n วันที่เกิดปัญหา: {woDate} \n หน่วยงานแจ้ง: {section.SectionName} \n ผู้แจ้ง: {woOld.ReqName} \n เบอร์ผู้แจ้ง: {woOld.ReqPhone} \n อีเมล์ผู้แจ้ง: {woOld.ReqEmail} \n {$"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}"}";
-
-                                //string msg = string.Format("IDYL: {2}| รหัส/ชื่ออุปกรณ์:{7}| อาการ/ปัญหา: {0}| วันที่แจ้ง: {1}" +
-                                //"| วันที่เกิดปัญหา: {3} | หน่วยงานแจ้ง: {4} | ผู้แจ้ง: {5}| {6} | เบอร์ผู้แจ้ง: {8} | อีเมล์ผู้แจ้ง: {9}"
-                                //    , wo.WorkDesc
-                                //    , woOld.WRDate != null ? Convert.ToDateTime(woOld.WRDate).ToString("dd/MM/yyyy HH:mm") : ""
-                                //    , woOld.WOCode
-                                //    , woOld.WODate != null ? Convert.ToDateTime(woOld.WODate).ToString("dd/MM/yyyy HH:mm") : ""
-                                //    , section.SectionName
-                                //    , woOld.ReqName
-                                //    , $"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}"
-                                //    , $"{woOld.EQCode};{woOld.EQName}"
-                                //    , woOld.ReqPhone
-                                //    , woOld.ReqEmail);
+                                string linkDoc = $"{_configuration["IdylWeb"]}/Form/WR/WREdit.aspx?WONo={wo.WONo}";
+                                string msg = new SendNotify(_configuration).GenerateMessageSendNotify(LineNotifyType.WRCreated, woOld, linkDoc, section.SectionName, wo);
 
                                 new SendNotify(_configuration).LineNotify(msg, section.LineToken);
                             }
