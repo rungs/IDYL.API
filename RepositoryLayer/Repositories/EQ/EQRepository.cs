@@ -220,7 +220,7 @@ namespace IdylAPI.Services.Repository.Master
                     conn.Open();
                     string condition = "";
                     condition += $" where eq.eqno = {whereParameter.EQNo}";
-                    condition += $" and wo.WOStatusNo = 2";
+                    condition += $" and wo.WOStatusNo not in (1,4)";
                     if (!string.IsNullOrEmpty(InputVal.ToString(whereParameter.Filter)))
                     {
                         condition += $" and(wo.wocode like '%{whereParameter.Filter}%'";
